@@ -1,0 +1,24 @@
+{
+  "name": "mcp",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "npx tsc --project tsconfig.json && node main.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@hono/node-server": "^1.14.2",
+    "@modelcontextprotocol/sdk": "^1.11.4",
+    "hono": "^4.7.10",
+    "hono-mcp-server-sse-transport": "^0.0.6",
+    "zod": "^3.25.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.19",
+    "typescript": "^5.8.3"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "api",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.1",
+    "@prisma/client": "^6.8.2",
+    "hono": "^4.7.9"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.17",
+    "prisma": "^6.8.2",
+    "tsx": "^4.7.1",
+    "typescript": "^5.8.3"
+  }
+}
