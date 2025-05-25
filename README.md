@@ -5,8 +5,18 @@
 
 サーバの起動
 ```
+cd api
+npm run dev
+
+cd mcp
 npm run dev
 ```
 
-エンドポイント
-<http://localhost:3000>
+ポート
+
+- localhost:3000
+  - チャットアプリ&MCPクライアント(Next.js)
+- localhost:3001
+  - MCPサーバー
+- localhost:8080
+  - todoアプリのapiサーバ

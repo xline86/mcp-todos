@@ -18,7 +18,7 @@
 
 # mcpサーバ
 
-参考
+参考サイト
 [【これ1本/初心者OK】MCPを実装理解するチュートリアル！Next.jsでAIアシスタントを開発【図解解説】](https://qiita.com/Sicut_study/items/e0fbbbf51cdd54d76b1a)
 
 # 作成するアプリについて
@@ -27,7 +27,15 @@ todoアプリ
 
 ## 仕組み
 
-![](./images/https___qiita-image-store.s3.ap-northeast-1.amazonaws.com_0_810513_04d91ca9-412a-43d0-88d5-cdbd3efee47e.avif)
+![今回作成するアプリの構成](./images/https___qiita-image-store.s3.ap-northeast-1.amazonaws.com_0_810513_04d91ca9-412a-43d0-88d5-cdbd3efee47e.avif)
+
+ポート
+- localhost:3000
+  - チャットアプリ&MCPクライアント(Next.js)
+- localhost:3001
+  - MCPサーバー
+- localhost:8080
+  - todoアプリのapiサーバ
 
 # MCPの通信方式
 
@@ -40,6 +48,11 @@ localで動作。標準入力/標準出力なので高速で安全
 主流。サーバは単一のエンドポイントを提供し、クライアントはhttp postでリクエストする
 
 #### thhp + sse
+
+クライアントがHTTPリクエストでサーバーにアクセスし、サーバーからはSSEで複数のメッセージをストリーミングできる方式。
+Streamable HTTPトランスポートの利用が推奨
+
+今回はこれを使う。
 
 # 使用する技術
 
@@ -56,7 +69,7 @@ localで動作。標準入力/標準出力なので高速で安全
 ```sh
 node -v
 v22.15.0
-mkdir mcp-todos
+mkdir mcp-todos # プロジェクトディレクトリ
 cd mcp-todos
 npm create hono@latest
 
@@ -70,7 +83,7 @@ create-hono version 0.18.0
 
 サーバーの起動
 
-`PS mcp-todos\api`で実行
+`/mcp-todos/api`で実行
 ```sh
 npm run dev
 curl http://localhost:3000
@@ -82,12 +95,13 @@ curl http://localhost:3000
 
 ## API のコード
 
-`src/index.ts`にある
+`/mcp-todos/api/src/index.ts`にある
 
 # 2. PrismaでDBを作る
 
 今回はsqliteを使う
 ```sh
+cd api
 npm install prisma --save-dev
 npx prisma init --datasource-provider sqlite --output ../generated/prisma
 ```
@@ -139,8 +153,6 @@ npx prisma generate
 
 - 2行目について
   - `Prisma Client`のTypeScriptコードを自動生成。(出力先は`../generated/prisma`)
-
-[todoテーブルの編集](テーブルtodoへのカラム追加.md)
 
 エンドポイントを追加してみよう
 
@@ -349,7 +361,7 @@ curserでmcpを開き次のようにする
   }
 }
 ```
-```json:mcppackage.json
+```json:mcp/package.json
 {
   "name": "mcp",
   "version": "1.0.0",
@@ -377,7 +389,7 @@ curserでmcpを開き次のようにする
 }
 
 ```
-```ts:mcpmain.ts
+```ts:mcp/main.ts
 import { Hono } from "hono";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { serve } from "@hono/node-server";
@@ -568,3 +580,33 @@ app.post("/messages", async (c) => {
 `async function addTodoItem(title: string)`, `mcpServer.tool("addTodoItem",...)`は見ればわかるはず。説明略
 
 import文でエラーがでている
+
+
+```bash
+cd mcp-todos
+npx create-next-app@latest
+
+# 名前だけ気をつける: `client`
+✔ What is your project named? … client
+✔ Would you like to use TypeScript? … No / Yes
+✔ Would you like to use ESLint? … No / Yes
+✔ Would you like to use Tailwind CSS? … No / Yes
+✔ Would you like your code inside a `src/` directory? … No / Yes
+✔ Would you like to use App Router? (recommended) … No / Yes
+✔ Would you like to use Turbopack for `next dev`? … No / Yes
+✔ Would you like to customize the import alias (`@/*` by default)? … No / Yes
+```
+```bash
+cd mcp-todos/client
+npm run dev
+```
+
+<http://localhost:3000>にアクセスして`next.js`の画面が表示されていれば大丈夫です。
+
+一覧取得にはTanStack Queryを利用します。
+
+```bash
+cd client
+npm i @tanstack/react-query
+touch src/app/QueryProvider.tsx
+```

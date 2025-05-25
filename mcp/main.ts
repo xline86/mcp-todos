@@ -1,10 +1,9 @@
 import { Hono } from "hono";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { serve } from "@hono/node-server";
-import { streamSSE } from "hono/streaming";
-import { SSETransport } from "hono-mcp-server-sse-transport";
+import { streamSSE } from "hono/streaming"; // 追加
+import { SSETransport } from "hono-mcp-server-sse-transport"; // 追加
 import { z } from "zod";
-
 
 const app = new Hono();
 
@@ -35,7 +34,6 @@ async function addTodoItem(title: string) {
   }
 }
 
-// todoを追加するツールを定義
 mcpServer.tool(
   "addTodoItem",
   "Add a new todo item",
@@ -94,7 +92,7 @@ mcpServer.tool(
   }
 );
 
-async function updateTodoItem(id: number, completed: boolean) {//id: stringをnumberに変更
+async function updateTodoItem(id: string, completed: boolean) {
   try {
     const response = await fetch(`http://localhost:8080/todos/${id}`, {
       method: "PUT",
@@ -120,7 +118,7 @@ mcpServer.tool(
   "updateTodoItem",
   "Update a todo item",
   {
-    id: z.number().describe("ID of the Todo to update"),
+    id: z.string().describe("ID of the Todo to update"),
     completed: z.boolean().describe("Completion status of the Todo"),
   },
   async ({ id, completed }) => {
@@ -141,3 +139,49 @@ serve({
   port: 3001,
 });
 console.log("[MCP] サーバーがポート3001で起動しました");
+
+// SSETransportのインスタンスをセッションごとに管理するためのオブジェクト
+let transports: { [sessionId: string]: SSETransport } = {};
+
+// `/sse`エンドポイントでmcpクライアントはサーバからのレスポンスを受け取る
+app.get("/sse", (c) => {
+  console.log("[SSE] /sse endpoint accessed");
+  return streamSSE(c, async (stream) => {
+    try {
+      // MCPクライアントからMCPサーバーへの接続に利用するエンドポイント
+      const transport = new SSETransport("/messages", stream);
+      console.log(
+        `[SSE] New SSETransport created: sessionId=${transport.sessionId}`
+      );
+
+      transports[transport.sessionId] = transport;
+
+      stream.onAbort(() => {
+        console.log(`[SSE] stream aborted: sessionId=${transport.sessionId}`);
+        delete transports[transport.sessionId];
+      });
+
+      await mcpServer.connect(transport);
+      console.log(
+        `[SSE] mcpServer connected: sessionId=${transport.sessionId}`
+      );
+
+      while (true) {
+        await stream.sleep(60_000);
+      }
+    } catch (err) {
+      console.error("[SSE] Error in streamSSE:", err);
+    }
+  });
+});
+
+app.post("/messages", async (c) => {
+  const sessionId = c.req.query("sessionId");
+  const transport = transports[sessionId ?? ""];
+
+  if (!transport) {
+    return c.text("No transport found for sessionId", 400);
+  }
+
+  return transport.handlePostMessage(c);
+});
